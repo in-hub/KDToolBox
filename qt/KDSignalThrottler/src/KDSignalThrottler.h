@@ -69,7 +69,6 @@ public:
     Qt::TimerType timerType() const;
     void setTimerType(Qt::TimerType timerType);
 
-public Q_SLOTS:
     void throttle();
 
 Q_SIGNALS:
