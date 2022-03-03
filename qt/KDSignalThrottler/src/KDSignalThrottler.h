@@ -87,40 +87,6 @@ private:
     bool m_hasPendingEmission;
 };
 
-// Convenience subclasses, e.g. for registering into QML
-
-class KDSignalThrottler : public KDGenericSignalThrottler
-{
-    Q_OBJECT
-public:
-    explicit KDSignalThrottler(QObject *parent = nullptr);
-    ~KDSignalThrottler() override;
-};
-
-class KDSignalLeadingThrottler : public KDGenericSignalThrottler
-{
-    Q_OBJECT
-public:
-    explicit KDSignalLeadingThrottler(QObject *parent = nullptr);
-    ~KDSignalLeadingThrottler() override;
-};
-
-class KDSignalDebouncer : public KDGenericSignalThrottler
-{
-    Q_OBJECT
-public:
-    explicit KDSignalDebouncer(QObject *parent = nullptr);
-    ~KDSignalDebouncer() override;
-};
-
-class KDSignalLeadingDebouncer : public KDGenericSignalThrottler
-{
-    Q_OBJECT
-public:
-    explicit KDSignalLeadingDebouncer(QObject *parent = nullptr);
-    ~KDSignalLeadingDebouncer() override;
-};
-
 } // namespace KDToolBox
 
 #endif // KDSIGNALTHROTTLER_H

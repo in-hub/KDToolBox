@@ -132,37 +132,4 @@ void KDGenericSignalThrottler::emitTriggered()
     Q_EMIT triggered();
 }
 
-// Convenience
-
-KDSignalThrottler::KDSignalThrottler(QObject *parent)
-    : KDGenericSignalThrottler(Kind::Throttler, EmissionPolicy::Trailing, parent)
-{
-}
-
-KDSignalThrottler::~KDSignalThrottler() = default;
-
-
-KDSignalLeadingThrottler::KDSignalLeadingThrottler(QObject *parent)
-    : KDGenericSignalThrottler(Kind::Throttler, EmissionPolicy::Leading, parent)
-{
-}
-
-KDSignalLeadingThrottler::~KDSignalLeadingThrottler() = default;
-
-
-KDSignalDebouncer::KDSignalDebouncer(QObject *parent)
-    : KDGenericSignalThrottler(Kind::Debouncer, EmissionPolicy::Trailing, parent)
-{
-}
-
-KDSignalDebouncer::~KDSignalDebouncer() = default;
-
-
-KDSignalLeadingDebouncer::KDSignalLeadingDebouncer(QObject *parent)
-    : KDGenericSignalThrottler(Kind::Debouncer, EmissionPolicy::Leading, parent)
-{
-}
-
-KDSignalLeadingDebouncer::~KDSignalLeadingDebouncer() = default;
-
 } // namespace KDToolBox
