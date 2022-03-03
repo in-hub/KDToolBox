@@ -41,8 +41,6 @@ class KDGenericSignalThrottler : public QObject
     Q_PROPERTY(Kind kind READ kind CONSTANT)
     Q_PROPERTY(EmissionPolicy emissionPolicy READ emissionPolicy CONSTANT)
     Q_PROPERTY(int timeout READ timeout WRITE setTimeout NOTIFY timeoutChanged)
-    Q_PROPERTY(Qt::TimerType timerType READ timerType WRITE setTimerType NOTIFY timerTypeChanged)
-
 public:
     enum class Kind {
         Throttler,
@@ -66,15 +64,11 @@ public:
     void setTimeout(int timeout);
     void setTimeout(std::chrono::milliseconds timeout);
 
-    Qt::TimerType timerType() const;
-    void setTimerType(Qt::TimerType timerType);
-
     void throttle();
 
 Q_SIGNALS:
     void triggered();
     void timeoutChanged(int timeout);
-    void timerTypeChanged(Qt::TimerType timerType);
 
 private:
     void maybeEmitTriggered();

@@ -74,19 +74,6 @@ void KDGenericSignalThrottler::setTimeout(std::chrono::milliseconds timeout)
     setTimeout(int(timeout.count()));
 }
 
-Qt::TimerType KDGenericSignalThrottler::timerType() const
-{
-    return m_timer.timerType();
-}
-
-void KDGenericSignalThrottler::setTimerType(Qt::TimerType timerType)
-{
-    if (m_timer.timerType() == timerType)
-        return;
-    m_timer.setTimerType(timerType);
-    Q_EMIT timerTypeChanged(timerType);
-}
-
 void KDGenericSignalThrottler::throttle()
 {
     m_hasPendingEmission = true;
