@@ -1,42 +1,24 @@
-/****************************************************************************
-**                                MIT License
-**
-** Copyright (C) 2018-2022 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com
-** Author: Sérgio Martins <sergio.martins@kdab.com>
-**
-** This file is part of KDToolBox (https://github.com/KDAB/KDToolBox).
-**
-** Permission is hereby granted, free of charge, to any person obtaining a copy
-** of this software and associated documentation files (the "Software"), to deal
-** in the Software without restriction, including without limitation the rights
-** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-** copies of the Software, ** and to permit persons to whom the Software is
-** furnished to do so, subject to the following conditions:
-**
-** The above copyright notice and this permission notice (including the next paragraph)
-** shall be included in all copies or substantial portions of the Software.
-**
-** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-** AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-** LIABILITY, WHETHER IN AN ACTION OF ** CONTRACT, TORT OR OTHERWISE,
-** ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-** DEALINGS IN THE SOFTWARE.
-****************************************************************************/
+/*
+  This file is part of KDToolBox.
+
+  SPDX-FileCopyrightText: 2018 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  Author: Sérgio Martins <sergio.martins@kdab.com>
+
+  SPDX-License-Identifier: MIT
+*/
 
 #ifndef UIWATCHDOG_H
 #define UIWATCHDOG_H
 
-#include <QThread>
-#include <QTimer>
-#include <QMutex>
+#include <QDebug>
 #include <QElapsedTimer>
 #include <QLoggingCategory>
-#include <QDebug>
+#include <QMutex>
+#include <QThread>
+#include <QTimer>
 
 #ifdef Q_OS_WIN
-# include <Windows.h>
+#include <Windows.h>
 #endif
 
 #define MAX_TIME_BLOCKED 300 // ms
@@ -48,7 +30,8 @@ class UiWatchdog;
 class UiWatchdogWorker : public QObject
 {
 public:
-    enum Option {
+    enum Option
+    {
         OptionNone = 0,
         OptionDebugBreak = 1
     };
@@ -76,10 +59,7 @@ private:
         m_elapsedTimeSinceLastBeat.start();
     }
 
-    void stop()
-    {
-        m_watchTimer->stop();
-    }
+    void stop() { m_watchTimer->stop(); }
 
     void checkUI()
     {
@@ -90,8 +70,9 @@ private:
             elapsed = m_elapsedTimeSinceLastBeat.elapsed();
         }
 
-        if (elapsed > MAX_TIME_BLOCKED) {
-            qDebug() << "UI is blocked !" << elapsed;  // Add custom action here!
+        if (elapsed > MAX_TIME_BLOCKED)
+        {
+            qDebug() << "UI is blocked !" << elapsed; // Add custom action here!
             if ((m_options & OptionDebugBreak))
                 debugBreak();
         }
@@ -120,13 +101,12 @@ private:
 class UiWatchdog : public QObject
 {
 public:
-
     explicit UiWatchdog(UiWatchdogWorker::Options options = UiWatchdogWorker::OptionNone, QObject *parent = nullptr)
         : QObject(parent)
         , m_uiTimer(new QTimer(this))
         , m_options(options)
     {
-        QLoggingCategory::setFilterRules("uidelays.debug=false");
+        QLoggingCategory::setFilterRules(QStringLiteral("uidelays.debug=false"));
         qCDebug(uidelays) << "UiWatchdog created";
         connect(m_uiTimer, &QTimer::timeout, this, &UiWatchdog::onUiBeat);
     }
@@ -148,9 +128,8 @@ public:
         m_watchDogThread = new QThread(this);
         m_worker->moveToThread(m_watchDogThread);
         m_watchDogThread->start();
-        connect(m_watchDogThread, &QThread::started, m_worker, [this, frequency_msecs] {
-            m_worker->start(frequency_msecs);
-        });
+        connect(m_watchDogThread, &QThread::started, m_worker,
+                [this, frequency_msecs] { m_worker->start(frequency_msecs); });
     }
 
     void stop()
@@ -169,10 +148,7 @@ public:
         m_worker = nullptr;
     }
 
-    void onUiBeat()
-    {
-        m_worker->reset();
-    }
+    void onUiBeat() { m_worker->reset(); }
 
 private:
     QTimer *const m_uiTimer;

@@ -1,29 +1,11 @@
-/****************************************************************************
-**                                MIT License
-**
-** Copyright (C) 2020-2022 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com
-** Author: Sérgio Martins <sergio.martins@kdab.com>
-**
-** This file is part of KDToolBox (https://github.com/KDAB/KDToolBox).
-**
-** Permission is hereby granted, free of charge, to any person obtaining a copy
-** of this software and associated documentation files (the "Software"), to deal
-** in the Software without restriction, including without limitation the rights
-** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-** copies of the Software, ** and to permit persons to whom the Software is
-** furnished to do so, subject to the following conditions:
-**
-** The above copyright notice and this permission notice (including the next paragraph)
-** shall be included in all copies or substantial portions of the Software.
-**
-** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-** AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-** LIABILITY, WHETHER IN AN ACTION OF ** CONTRACT, TORT OR OTHERWISE,
-** ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-** DEALINGS IN THE SOFTWARE.
-****************************************************************************/
+/*
+  This file is part of KDToolBox.
+
+  SPDX-FileCopyrightText: 2020 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  Author: Sérgio Martins <sergio.martins@kdab.com>
+
+  SPDX-License-Identifier: MIT
+*/
 
 #ifndef KDTOOLBOX_EVENTFILTER_H
 #define KDTOOLBOX_EVENTFILTER_H
@@ -31,83 +13,69 @@
 ///@file
 ///@brief Implements KDToolBox::EventFilter
 
-#include <QObject>
 #include <QEvent>
+#include <QObject>
 #include <QPointer>
 
 #include <memory>
 #include <type_traits>
 
-namespace KDToolBox {
+namespace KDToolBox
+{
 
-namespace KDToolBoxPrivate {
+namespace KDToolBoxPrivate
+{
 
-template <typename ...> using void_t = void;
+template<typename...>
+using void_t = void;
 
 // TODO: refactor in two use cases to avoid combinatorial explosion
 // (1: invoke with or without parameters; 2: always return bool)
-template <typename C, typename Enable = void_t<>>
+template<typename C, typename Enable = void_t<>>
 struct CallbackInvoker
 {
     static bool invoke(C &c, QObject *, QEvent *)
     {
-        (void) c();
+        (void)c();
         return false;
     }
 };
 
-template <typename C>
+template<typename C>
 struct CallbackInvoker<C,
-    typename std::enable_if<std::is_convertible<
-            decltype(std::declval<C>()())
-        , bool>::value
-    >::type
->
+                       typename std::enable_if<std::is_convertible<decltype(std::declval<C>()()), bool>::value>::type>
 {
-    static bool invoke(C &c, QObject *, QEvent *)
-    {
-        return c();
-    }
+    static bool invoke(C &c, QObject *, QEvent *) { return c(); }
 };
 
-template <typename C>
-struct CallbackInvoker<C,
-    typename std::enable_if<std::is_void<
-            decltype(std::declval<C>()(std::declval<QObject *>(), std::declval<QEvent *>()))
-        >::value
-    >::type
->
+template<typename C>
+struct CallbackInvoker<C, typename std::enable_if<std::is_void<decltype(std::declval<C>()(
+                              std::declval<QObject *>(), std::declval<QEvent *>()))>::value>::type>
 {
     static bool invoke(C &c, QObject *target, QEvent *event)
     {
-        (void) c(target, event);
+        (void)c(target, event);
         return false;
     }
 };
 
-template <typename C>
-struct CallbackInvoker<C,
-    typename std::enable_if<std::is_convertible<
-            decltype(std::declval<C>()(std::declval<QObject *>(), std::declval<QEvent *>()))
-        , bool>::value
-    >::type
->
+template<typename C>
+struct CallbackInvoker<
+    C, typename std::enable_if<std::is_convertible<
+           decltype(std::declval<C>()(std::declval<QObject *>(), std::declval<QEvent *>())), bool>::value>::type>
 {
-    static bool invoke(C &c, QObject *target, QEvent *event)
-    {
-        return c(target, event);
-    }
+    static bool invoke(C &c, QObject *target, QEvent *event) { return c(target, event); }
 };
 
 } // namespace KDToolBoxPrivate
 
-template <typename Callback>
+template<typename Callback>
 class EventFilter : public QObject
 {
     Q_DISABLE_COPY(EventFilter)
 
 private:
-    template <typename C>
+    template<typename C>
     explicit EventFilter(QObject *target, QEvent::Type eventType, C &&callback, QObject *parent)
         : QObject(parent)
         , m_eventType(eventType)
@@ -126,12 +94,9 @@ private:
         return QObject::eventFilter(target, event);
     }
 
-    template <typename C>
+    template<typename C>
     friend EventFilter<typename std::remove_reference<C>::type> *
-    installEventFilter(QObject *target,
-                       QEvent::Type eventType,
-                       C &&callback,
-                       QObject *parent);
+    installEventFilter(QObject *target, QEvent::Type eventType, C &&callback, QObject *parent);
 
     const QEvent::Type m_eventType;
     Callback m_callback;
@@ -160,32 +125,22 @@ private:
  * does not return anything, return false is implied.
  * @param parent Optional QObject parent for ownership purposes
  */
-template <typename Callback>
-EventFilter<typename std::remove_reference<Callback>::type> *
-installEventFilter(QObject *target,
-                   QEvent::Type eventType,
-                   Callback &&callback,
-                   QObject *parent)
+template<typename Callback>
+EventFilter<typename std::remove_reference<Callback>::type> *installEventFilter(QObject *target, QEvent::Type eventType,
+                                                                                Callback &&callback, QObject *parent)
 {
-    return new EventFilter<Callback>(target,
-                                     eventType,
-                                     std::forward<Callback>(callback),
-                                     parent);
+    return new EventFilter<Callback>(target, eventType, std::forward<Callback>(callback), parent);
 }
 
 /**
  * @brief Overload which returns a std::unique_ptr instead of receiving a QObject parent.
  */
-template <typename Callback>
-Q_REQUIRED_RESULT
-std::unique_ptr<EventFilter<typename std::remove_reference<Callback>::type>>
-installEventFilter(QObject *target,
-                   QEvent::Type eventType,
-                   Callback &&callback)
+template<typename Callback>
+Q_REQUIRED_RESULT std::unique_ptr<EventFilter<typename std::remove_reference<Callback>::type>>
+installEventFilter(QObject *target, QEvent::Type eventType, Callback &&callback)
 {
     return std::unique_ptr<EventFilter<typename std::remove_reference<Callback>::type>>(
-        installEventFilter(target, eventType, std::forward<Callback>(callback), nullptr)
-    );
+        installEventFilter(target, eventType, std::forward<Callback>(callback), nullptr));
 }
 
 } // namespace KDToolBox

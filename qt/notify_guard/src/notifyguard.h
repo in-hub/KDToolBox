@@ -1,39 +1,23 @@
-/****************************************************************************
-**                                MIT License
-**
-** Copyright (C) 2020-2022 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com
-** Author: André Somers <andre.somers@kdab.com>
-**
-** This file is part of KDToolBox (https://github.com/KDAB/KDToolBox).
-**
-** Permission is hereby granted, free of charge, to any person obtaining a copy
-** of this software and associated documentation files (the "Software"), to deal
-** in the Software without restriction, including without limitation the rights
-** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-** copies of the Software, ** and to permit persons to whom the Software is
-** furnished to do so, subject to the following conditions:
-**
-** The above copyright notice and this permission notice (including the next paragraph)
-** shall be included in all copies or substantial portions of the Software.
-**
-** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-** AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-** LIABILITY, WHETHER IN AN ACTION OF ** CONTRACT, TORT OR OTHERWISE,
-** ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-** DEALINGS IN THE SOFTWARE.
-****************************************************************************/
+/*
+  This file is part of KDToolBox.
+
+  SPDX-FileCopyrightText: 2020 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  Author: André Somers <andre.somers@kdab.com>
+
+  SPDX-License-Identifier: MIT
+*/
 
 #ifndef KDTOOLBOX_NOTIFYGUARD_H
 #define KDTOOLBOX_NOTIFYGUARD_H
 
-#include <memory>
 #include <QMetaMethod>
+#include <memory>
 
-namespace KDToolBox {
+namespace KDToolBox
+{
 
-namespace Internal {
+namespace Internal
+{
 struct SignalData;
 using SignalDataSPtr = std::shared_ptr<SignalData>;
 }
@@ -68,31 +52,34 @@ using SignalDataSPtr = std::shared_ptr<SignalData>;
 class NotifyGuard
 {
 public:
-    enum GuardOptions {
-        RecursiveScope, //!< This guard will only activate if there isn't already another guard on the same property active (in an outer scope).
+    enum GuardOptions
+    {
+        RecursiveScope, //!< This guard will only activate if there isn't already another guard on the same property
+                        //!< active (in an outer scope).
         SingleScope,    //!< This guard only considers its own scope.
     };
 
 public:
     NotifyGuard() = default;
-    explicit NotifyGuard(QObject* target, const char* property, GuardOptions options = RecursiveScope);
-    template <typename PointerToMemberFunction>
-    explicit NotifyGuard(QObject* target, PointerToMemberFunction notifySignal, GuardOptions options = RecursiveScope):
-        NotifyGuard(target, QMetaMethod::fromSignal(notifySignal), options)
-    {}
+    explicit NotifyGuard(QObject *target, const char *property, GuardOptions options = RecursiveScope);
+    template<typename PointerToMemberFunction>
+    explicit NotifyGuard(QObject *target, PointerToMemberFunction notifySignal, GuardOptions options = RecursiveScope)
+        : NotifyGuard(target, QMetaMethod::fromSignal(notifySignal), options)
+    {
+    }
     // we allow moving from a NotifyGuard
-    NotifyGuard(NotifyGuard&&) = default;
-    NotifyGuard& operator=(NotifyGuard&&) = default;
+    NotifyGuard(NotifyGuard &&) = default;
+    NotifyGuard &operator=(NotifyGuard &&) = default;
 
     ~NotifyGuard();
 
-    inline bool isActive() const {return bool(m_signalData);}
+    inline bool isActive() const { return bool(m_signalData); }
 
-private: //methods
+private: // methods
     Q_DISABLE_COPY(NotifyGuard)
-    explicit NotifyGuard(QObject* target, QMetaMethod notifySignal, GuardOptions options);
+    explicit NotifyGuard(QObject *target, QMetaMethod notifySignal, GuardOptions options);
 
-private: //members
+private: // members
     Internal::SignalDataSPtr m_signalData;
 };
 

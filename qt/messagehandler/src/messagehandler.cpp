@@ -1,41 +1,25 @@
-/****************************************************************************
-**                                MIT License
-**
-** Copyright (C) 2020-2022 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com
-** Author: Giuseppe D'Angelo <giuseppe.dangelo@kdab.com>
-**
-** This file is part of KDToolBox (https://github.com/KDAB/KDToolBox).
-**
-** Permission is hereby granted, free of charge, to any person obtaining a copy
-** of this software and associated documentation files (the "Software"), to deal
-** in the Software without restriction, including without limitation the rights
-** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-** copies of the Software, ** and to permit persons to whom the Software is
-** furnished to do so, subject to the following conditions:
-**
-** The above copyright notice and this permission notice (including the next paragraph)
-** shall be included in all copies or substantial portions of the Software.
-**
-** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-** AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-** LIABILITY, WHETHER IN AN ACTION OF ** CONTRACT, TORT OR OTHERWISE,
-** ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-** DEALINGS IN THE SOFTWARE.
-****************************************************************************/
+/*
+  This file is part of KDToolBox.
+
+  SPDX-FileCopyrightText: 2020 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  Author: Giuseppe D'Angelo <giuseppe.dangelo@kdab.com>
+
+  SPDX-License-Identifier: MIT
+*/
 
 #include "messagehandler.h"
 
 #include <QBasicMutex>
 
 #include <atomic>
-#include <mutex>
 #include <forward_list>
+#include <mutex>
 
-namespace {
+namespace
+{
 
-struct RegisteredCallback {
+struct RegisteredCallback
+{
     const RegisteredCallback *next;
     QtMsgType messageType;
     QRegularExpression pattern;
@@ -44,11 +28,12 @@ struct RegisteredCallback {
 
 std::once_flag oldMessageHandlerFlag;
 std::atomic<QtMessageHandler> oldMessageHandler;
-std::atomic<const RegisteredCallback*> callbacks;
+std::atomic<const RegisteredCallback *> callbacks;
 
 bool isMessageTypeCompatibleWith(QtMsgType in, QtMsgType reference)
 {
-    switch (in) {
+    switch (in)
+    {
     case QtDebugMsg:
         if (reference == QtInfoMsg)
             return false;
@@ -62,7 +47,8 @@ bool isMessageTypeCompatibleWith(QtMsgType in, QtMsgType reference)
             return false;
         break;
     case QtFatalMsg:
-        if (reference == QtCriticalMsg || reference == QtWarningMsg || reference == QtDebugMsg || reference == QtInfoMsg)
+        if (reference == QtCriticalMsg || reference == QtWarningMsg || reference == QtDebugMsg ||
+            reference == QtInfoMsg)
             return false;
         break;
     case QtInfoMsg:
@@ -74,20 +60,23 @@ bool isMessageTypeCompatibleWith(QtMsgType in, QtMsgType reference)
 
 void ourMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &message)
 {
-    for (auto it = callbacks.load(std::memory_order_acquire); it; it = it->next) { // synchronizes-with store-release in registerMessageHandler
+    for (auto it = callbacks.load(std::memory_order_acquire); it; it = it->next)
+    { // synchronizes-with store-release in registerMessageHandler
         if (!isMessageTypeCompatibleWith(it->messageType, type))
             continue;
         if (message.contains(it->pattern))
             it->callback();
     }
 
-    if (auto h = oldMessageHandler.load(std::memory_order_acquire)) // synchronizes-with the store-release in installOurMessageHandler()
+    if (auto h = oldMessageHandler.load(
+            std::memory_order_acquire)) // synchronizes-with the store-release in installOurMessageHandler()
         h(type, context, message);
 }
 
 } // anonymous namespace
 
-void KDToolBox::Private::registerMessageHandler(QtMsgType type, const QRegularExpression &pattern, std::function<void()> func)
+void KDToolBox::Private::registerMessageHandler(QtMsgType type, const QRegularExpression &pattern,
+                                                std::function<void()> func)
 {
     const auto installOurMessageHandler = [] {
         oldMessageHandler.store(qInstallMessageHandler(&ourMessageHandler),
@@ -97,7 +86,9 @@ void KDToolBox::Private::registerMessageHandler(QtMsgType type, const QRegularEx
 
     auto tmp = new RegisteredCallback{nullptr, type, pattern, std::move(func)};
     auto expected = callbacks.load(std::memory_order_relaxed); // just the pointer value
-    do {
+    do
+    {
         tmp->next = expected;
-    } while (!callbacks.compare_exchange_weak(expected, tmp, std::memory_order_release)); // synchronizes-with load-acquire in outMessageHandler
+    } while (!callbacks.compare_exchange_weak(
+        expected, tmp, std::memory_order_release)); // synchronizes-with load-acquire in outMessageHandler
 }

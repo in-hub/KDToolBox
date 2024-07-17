@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+#
+# SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only
+
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+
+        config:
+          - qt_version: "5.15"
+          - qt_version: "6.4.*" # Qt 6.5+ requires newer xcode 14.3.1 unavailabe atm
+
+    steps:
+      - name: Install Qt ${{ matrix.config.qt_version }} with options and default aqtversion
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.config.qt_version }}
+          cache: true
+
+      - name: Install ninja-build tool (must be after Qt due PATH changes)
+        uses: turtlesec-no/get-ninja@main
+
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Fetch Git submodule
+        run: git submodule update --init --recursive
+
+      - name: Make sure MSVC is found when Ninja generator is in use
+        if: ${{ runner.os == 'Windows' }}
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure project
+        run: cmake -S . -B ./build
+
+      - name: Build Project
+        run: cmake --build ./build
+
+      - name: Run tests on Linux (offscreen)
+        if: ${{ runner.os == 'Linux' }}
+        run: ctest --test-dir ./build --output-on-failure
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QT_QUICK_BACKEND: software
+
+      - name: Run tests on Window/macOS
+        if: ${{ runner.os != 'Linux' }}
+        run: ctest --test-dir ./build --output-on-failure
+
+      - name: Read tests log when it fails
+        uses: andstor/file-reader-action@v1
+        if: ${{ failure() && startsWith(matrix.preset.name, 'ci-dev-') }}
+        with:
+          path: "./build/Testing/Temporary/LastTest.log"

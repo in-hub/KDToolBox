@@ -1,28 +1,10 @@
-/****************************************************************************
-**                                MIT License
-**
-** Copyright (C) 2019-2022 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com
-**
-** This file is part of KDToolBox (https://github.com/KDAB/KDToolBox).
-**
-** Permission is hereby granted, free of charge, to any person obtaining a copy
-** of this software and associated documentation files (the "Software"), to deal
-** in the Software without restriction, including without limitation the rights
-** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-** copies of the Software, ** and to permit persons to whom the Software is
-** furnished to do so, subject to the following conditions:
-**
-** The above copyright notice and this permission notice (including the next paragraph)
-** shall be included in all copies or substantial portions of the Software.
-**
-** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-** AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-** LIABILITY, WHETHER IN AN ACTION OF ** CONTRACT, TORT OR OTHERWISE,
-** ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-** DEALINGS IN THE SOFTWARE.
-****************************************************************************/
+/*
+  This file is part of KDToolBox.
+
+  SPDX-FileCopyrightText: 2019 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+
+  SPDX-License-Identifier: MIT
+*/
 
 #include <QTest>
 
@@ -41,18 +23,24 @@ private Q_SLOTS:
     void constCast();
 };
 
-namespace {
+namespace
+{
 
-struct B {
+struct B
+{
     B() = default;
-    B(const B&) = delete;
-    B& operator=(const B&) = delete;
+    B(const B &) = delete;
+    B &operator=(const B &) = delete;
     virtual ~B() = default;
 };
 
-struct D : B {};
+struct D : B
+{
+};
 
-struct D2 : B {};
+struct D2 : B
+{
+};
 
 } // unnamed namespace
 
@@ -65,10 +53,10 @@ void tst_pointer_cast::makeQShared()
         QCOMPARE(*p, 42);
     }
     {
-        auto p = make_qshared<QString>("Hello");
+        auto p = make_qshared<QString>(QStringLiteral("Hello"));
         Q_STATIC_ASSERT((std::is_same<decltype(p), QSharedPointer<QString>>::value));
         QVERIFY(p);
-        QCOMPARE(*p, "Hello");
+        QCOMPARE(*p, QStringLiteral("Hello"));
     }
 }
 

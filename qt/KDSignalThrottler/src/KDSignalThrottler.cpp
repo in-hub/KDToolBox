@@ -1,43 +1,39 @@
-/****************************************************************************
-**                                MIT License
-**
-** Copyright (C) 2020-2022 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Giuseppe D'Angelo <giuseppe.dangelo@kdab.com>
-**
-** This file is part of KDToolBox (https://github.com/KDAB/KDToolBox).
-**
-** Permission is hereby granted, free of charge, to any person obtaining a copy
-** of this software and associated documentation files (the "Software"), to deal
-** in the Software without restriction, including without limitation the rights
-** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-** copies of the Software, ** and to permit persons to whom the Software is
-** furnished to do so, subject to the following conditions:
-**
-** The above copyright notice and this permission notice (including the next paragraph)
-** shall be included in all copies or substantial portions of the Software.
-**
-** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-** AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-** LIABILITY, WHETHER IN AN ACTION OF ** CONTRACT, TORT OR OTHERWISE,
-** ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-** DEALINGS IN THE SOFTWARE.
-****************************************************************************/
+/*
+  This file is part of KDToolBox.
+
+  SPDX-FileCopyrightText: 2020 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  Author: Giuseppe D'Angelo <giuseppe.dangelo@kdab.com>
+
+  SPDX-License-Identifier: MIT
+*/
 
 #include "KDSignalThrottler.h"
 
-namespace KDToolBox {
+namespace KDToolBox
+{
 
-KDGenericSignalThrottler::KDGenericSignalThrottler(Kind kind,
-                                     EmissionPolicy emissionPolicy,
-                                     QObject *parent)
+KDGenericSignalThrottler::KDGenericSignalThrottler(Kind kind, EmissionPolicy emissionPolicy, QObject *parent)
     : QObject(parent)
     , m_timer(this)
     , m_kind(kind)
     , m_emissionPolicy(emissionPolicy)
     , m_hasPendingEmission(false)
 {
-    m_timer.setSingleShot(true);
+    // For leading throttlers we use a repeated timer. This is in order
+    // to catch the case where a signal is received by the throttler
+    // just after it emitted a throttled/debounced signal. Even if leading,
+    // it shouldn't re-emit immediately, as it would be too close to the previous one.
+    // So we keep the timer running, and stop it later if it times out
+    // with no intervening timeout() emitted by it.
+    switch (m_emissionPolicy)
+    {
+    case EmissionPolicy::Leading:
+        m_timer.setSingleShot(false);
+        break;
+    case EmissionPolicy::Trailing:
+        m_timer.setSingleShot(true);
+        break;
+    }
     connect(&m_timer, &QTimer::timeout, this, &KDGenericSignalThrottler::maybeEmitTriggered);
 }
 
@@ -78,7 +74,8 @@ void KDGenericSignalThrottler::throttle()
 {
     m_hasPendingEmission = true;
 
-    switch (m_emissionPolicy) {
+    switch (m_emissionPolicy)
+    {
     case EmissionPolicy::Leading:
         // Emit only if we haven't emitted already. We know if that's
         // the case by checking if the timer is running.
@@ -93,7 +90,8 @@ void KDGenericSignalThrottler::throttle()
     // and we're Leading, and we did emit because of that,
     // then we don't re-emit when the timer fires (unless we get ANOTHER
     // signal).
-    switch (m_kind) {
+    switch (m_kind)
+    {
     case Kind::Throttler:
         if (!m_timer.isActive())
             m_timer.start(); // = actual start, not restart
@@ -110,6 +108,8 @@ void KDGenericSignalThrottler::maybeEmitTriggered()
 {
     if (m_hasPendingEmission)
         emitTriggered();
+    else
+        m_timer.stop();
 }
 
 void KDGenericSignalThrottler::emitTriggered()
